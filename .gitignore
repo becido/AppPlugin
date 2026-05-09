@@ -1,0 +1,5 @@
+data/*.jsonl
+data/*.log
+data/*.pid
+!data/.gitkeep
+.claude/settings.local.json
