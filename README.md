@@ -191,6 +191,85 @@ Works whether the app is running or stopped. All data persists across sessions u
 
 ---
 
+## Preparing your app for monitoring
+
+The daemon detects issues by scanning your app's console output line by line. For auto-detection and auto-fix suggestions to work, **your application must print `ERROR` or `WARNING`/`WARN` to stdout or stderr** — not swallow them silently inside exception handlers.
+
+### Python / FastAPI apps
+
+Python's `logging` module does not emit to the console by default unless configured. Add this near the top of your entry point (e.g. `main.py`):
+
+```python
+import logging
+import sys
+
+logging.basicConfig(
+    stream=sys.stdout,
+    level=logging.DEBUG,
+    format="%(levelname)s:%(name)s: %(message)s",
+    force=True,          # ensures this wins even if a framework configured logging first
+)
+```
+
+Then use `logger.exception()` (or `logger.error()`) in every `except` block **before** re-raising or returning an error response:
+
+```python
+logger = logging.getLogger(__name__)
+
+try:
+    result = do_something()
+except Exception as e:
+    logger.exception("Failed to do something")   # prints full traceback as ERROR
+    raise HTTPException(status_code=500, detail=str(e))
+```
+
+Without the `logger.exception()` call, the exception is swallowed into the HTTP response and never appears in the console — so the daemon cannot see it.
+
+#### Catching unhandled exceptions (FastAPI)
+
+Add a middleware to log anything that slips past your route handlers:
+
+```python
+import traceback
+from fastapi import Request
+from fastapi.responses import JSONResponse
+
+@app.middleware("http")
+async def log_unhandled_exceptions(request: Request, call_next):
+    try:
+        return await call_next(request)
+    except Exception:
+        logger.error("Unhandled exception on %s %s\n%s",
+                     request.method, request.url.path, traceback.format_exc())
+        return JSONResponse(status_code=500, content={"detail": "Internal server error"})
+```
+
+### Node.js / Express apps
+
+Use `console.error(...)` for errors and `console.warn(...)` for warnings. These write to stderr, which the daemon captures alongside stdout. Avoid silently swallowing errors in `.catch()` callbacks without logging them.
+
+### Suppressing known-harmless warnings
+
+Some frameworks emit `WARNING`-level log lines as normal operational messages (e.g. uvicorn's hot-reload notifying you that a file changed). These will show up as pending issues every time you edit a file.
+
+Suppress them at the logger level rather than setting `warn_pref: "ignore"` globally (which would hide real warnings too):
+
+```python
+# Silence uvicorn's WatchFiles reload noise
+logging.getLogger("watchfiles").setLevel(logging.ERROR)
+```
+
+Apply the same pattern for any other chatty third-party logger — raise its level to `ERROR` so only genuine problems surface.
+
+### Quick checklist
+
+- [ ] Logging is configured to write to stdout or stderr
+- [ ] All `except` blocks call `logger.exception()` or `logger.error()` before handling the error
+- [ ] A catch-all middleware or top-level handler logs unhandled exceptions
+- [ ] Known-harmless WARNING sources are suppressed at the logger level
+
+---
+
 ## File structure
 
 ```
