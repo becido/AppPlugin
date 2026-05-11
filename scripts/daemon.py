@@ -25,8 +25,7 @@ import time
 from pathlib import Path
 from collections import deque
 
-BASE_DIR = Path(__file__).parent.parent
-DATA_DIR = BASE_DIR / "data"
+DATA_DIR = Path.cwd() / "data"
 CONFIG_FILE = DATA_DIR / "config.json"
 DAEMON_PID_FILE = DATA_DIR / "daemon.pid"
 APP_PID_FILE = DATA_DIR / "app.pid"

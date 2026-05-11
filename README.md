@@ -35,6 +35,9 @@ Crashes (non-zero exit codes) are detected automatically and reported immediatel
 ### `/app stop`
 Stops the monitored application and its background daemon cleanly.
 
+### `/app reset`
+Stops the application, then immediately starts it again. Useful for picking up code changes or recovering from a crash without leaving the monitoring session.
+
 ### `/app report`
 Generates a full health report for the current (or most recent) session:
 
@@ -87,7 +90,7 @@ pip install psutil
 
 **4. Verify**
 
-Open any project in Claude Code and type `/app` — you should see `start`, `stop`, `monitor`, `report`.
+Open any project in Claude Code and type `/app` — you should see `start`, `stop`, `reset`, `monitor`, `report`.
 
 ---
 
@@ -130,7 +133,7 @@ pip install psutil
 
 **4. Verify installation**
 
-In Claude Code, type `/app` — you should see the available commands: `start`, `stop`, `monitor`, `report`.
+In Claude Code, type `/app` — you should see the available commands: `start`, `stop`, `reset`, `monitor`, `report`.
 
 ---
 
@@ -180,6 +183,22 @@ Set `error_pref` and/or `warn_pref` back to `"ask"` in `data/config.json`:
 ```
 
 Valid preference values: `"ask"` · `"auto_fix"` · `"ignore"`
+
+### Stopping the app
+
+```
+/app stop
+```
+
+Stops the managed application and its background daemon cleanly.
+
+### Restarting the app
+
+```
+/app reset
+```
+
+Stops the app and immediately starts it again using the saved command. Useful after editing source code or recovering from a crash without leaving the monitoring session.
 
 ### Viewing a session report
 
@@ -280,21 +299,13 @@ AppPlugin/
 │   │   └── app/
 │   │       ├── start.md     # /app start
 │   │       ├── stop.md      # /app stop
+│   │       ├── reset.md     # /app reset
 │   │       ├── monitor.md   # /app monitor (internal, driven by /loop)
 │   │       └── report.md    # /app report
 │   └── settings.local.json  # Bash permission allowlist (per-project install only)
 ├── scripts/
 │   └── daemon.py            # Background process manager and output monitor
-├── data/                    # Runtime state (gitignored except .gitkeep)
-│   ├── config.json          # Saved start command and auto-fix preferences
-│   ├── app.log              # Full stdout+stderr of the managed app
-│   ├── issues_pending.jsonl # Unacknowledged ERROR/WARN records
-│   ├── issues_handled.jsonl # Acknowledged issue archive
-│   ├── crashes.jsonl        # Crash records with last 100 output lines
-│   ├── metrics.jsonl        # CPU/memory samples (every 10 seconds)
-│   ├── daemon.pid           # PID of the monitoring daemon
-│   └── app.pid              # PID of the managed application
-└── .gitignore               # Ignores all data/ files except .gitkeep
+└── .gitignore               # Ignores AppPlugin's own data/ directory
 ```
 
 ---
@@ -304,7 +315,7 @@ AppPlugin/
 `/app start` launches `scripts/daemon.py` as a detached background process using `nohup`. The daemon:
 
 1. Spawns your app via the shell and captures its combined stdout+stderr through a pipe.
-2. Writes every line to `data/app.log`.
+2. Writes every line to `data/app.log` inside **your application's working directory**.
 3. Scans each line for `ERROR`, `WARN`, or `WARNING` (case-insensitive, whole-word match) and appends matching records to `data/issues_pending.jsonl`.
 4. On process exit with a non-zero code, records a crash entry in `data/crashes.jsonl` including the last 100 lines of output.
 5. Samples CPU% and memory usage every 10 seconds and appends to `data/metrics.jsonl`.
@@ -315,4 +326,4 @@ Claude Code's `/loop` mechanism drives `/app monitor` on repeat. Each cycle, Cla
 
 ## Data and privacy
 
-All captured output, logs, and metrics are stored locally in `data/`. Nothing is sent anywhere. The `data/` directory is gitignored (except for `.gitkeep`) so logs do not end up in version control. `data/config.json` (your saved command and preferences) is not gitignored and will be committed if you `git add` it.
+All captured output, logs, and metrics are stored locally in a `data/` directory created inside **your application's working directory** — not inside the AppPlugin folder. Nothing is sent anywhere. You may want to add `data/` to your project's `.gitignore` so logs do not end up in version control. `data/config.json` (your saved command and preferences) is intentionally not ignored and will be committed if you `git add` it.
