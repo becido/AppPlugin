@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Resolves daemon.py relative to this script so the plugin works regardless of install location.
+PLUGIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+exec python "$PLUGIN_DIR/scripts/daemon.py" "$@"

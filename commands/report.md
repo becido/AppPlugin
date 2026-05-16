@@ -8,7 +8,7 @@ Read all data files and render the report below. If a file doesn't exist, show "
 
 Run:
 ```bash
-python scripts/daemon.py status
+app-monitor-daemon status
 ```
 
 Show whether the app is currently running or stopped.

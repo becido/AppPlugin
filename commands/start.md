@@ -38,7 +38,7 @@ If **alive**: tell the user the app is already running with that PID and stop he
 
 Ensure the data directory exists and launch the daemon in the background:
 ```bash
-mkdir -p data && nohup python scripts/daemon.py start "COMMAND" >> data/daemon.log 2>&1 &
+mkdir -p data && nohup app-monitor-daemon start "COMMAND" >> data/daemon.log 2>&1 &
 ```
 
 Replace `COMMAND` with the command from Step 1 (keep the surrounding double quotes).
@@ -55,9 +55,9 @@ If no PID file appears, read `data/daemon.log` for errors and report them to the
 ## Step 4 — Confirm and start monitoring
 
 Tell the user the application is running, then say:
-> "Starting continuous monitoring — I'll surface any ERRORs or WARNINGs as they appear. Use `/app stop` to stop the app, or `/app report` for a full health report."
+> "Starting continuous monitoring — I'll surface any ERRORs or WARNINGs as they appear. Use `/app-monitor:stop` to stop the app, or `/app-monitor:report` for a full health report."
 
 Then immediately start the monitoring loop by invoking:
 ```
-/loop /app monitor
+/loop /app-monitor:monitor
 ```

@@ -6,15 +6,15 @@ A Claude Code plugin that manages, monitors, and auto-fixes your running applica
 
 ## What it does
 
-### `/app start`
+### `/app-monitor:start`
 Starts your application as a monitored background process.
 
-- **First run:** asks you for the command to start your app (e.g. `python app.py`, `npm start`, `./server`), then saves it. Every subsequent `/app start` uses the saved command automatically — no prompt.
+- **First run:** asks you for the command to start your app (e.g. `python app.py`, `npm start`, `./server`), then saves it. Every subsequent `/app-monitor:start` uses the saved command automatically — no prompt.
 - Spawns the app in the background and begins capturing all console output.
 - Automatically starts a continuous monitoring loop.
 
 ### Continuous monitoring
-After `/app start`, Claude watches your app's output in real time. Whenever a line containing `ERROR`, `WARN`, or `WARNING` is detected, Claude surfaces it and asks:
+After `/app-monitor:start`, Claude watches your app's output in real time. Whenever a line containing `ERROR`, `WARN`, or `WARNING` is detected, Claude surfaces it and asks:
 
 ```
 [ERROR] 2026-05-09 12:34:56
@@ -32,13 +32,13 @@ Fix this?
 
 Crashes (non-zero exit codes) are detected automatically and reported immediately, including the last 100 lines of output at the time of the crash.
 
-### `/app stop`
+### `/app-monitor:stop`
 Stops the monitored application and its background daemon cleanly.
 
-### `/app restart`
+### `/app-monitor:restart`
 Stops the application, then immediately starts it again. Useful for picking up code changes or recovering from a crash without leaving the monitoring session.
 
-### `/app report`
+### `/app-monitor:report`
 Generates a full health report for the current (or most recent) session:
 
 - **Crash log** — count, timestamps, exit codes, and last log lines for each crash
@@ -58,17 +58,37 @@ Generates a full health report for the current (or most recent) session:
 
 ## Installation
 
-### Option A — Global install (recommended)
+### Option A — Plugin install (recommended)
 
-Installs the `/app` commands once so they are available in **every** Claude Code project without any per-project setup.
+Install directly from the Claude Code plugin system — no manual setup required:
+
+```
+/plugin install app-monitor@claude-plugins-official
+```
+
+Or browse to it via `/plugin` → **Discover** in Claude Code.
+
+Once installed, the `/app-monitor:*` commands are available in every project automatically.
+
+**Optional: install psutil for richer metrics**
+
+```bash
+pip install psutil
+```
+
+---
+
+### Option B — Manual global install
+
+Use this if you are not yet on a version of Claude Code that supports the plugin marketplace.
 
 **1. Clone this repo to a permanent location**
 
 ```bash
-git clone <this-repo> ~/claude-plugins/AppPlugin
+git clone https://github.com/becido/AppPlugin ~/claude-plugins/AppPlugin
 ```
 
-> The repo must stay at this path — the global commands reference the daemon script by absolute path.
+> The repo must stay at this path — the daemon wrapper resolves `scripts/daemon.py` relative to the repo.
 
 **2. Run the installer**
 
@@ -78,9 +98,15 @@ cd ~/claude-plugins/AppPlugin
 ```
 
 The installer:
-- Copies the `/app` command files into `~/.claude/commands/app/`
-- Rewrites the internal script path to the absolute location of `scripts/daemon.py`
+- Creates `~/.local/bin/app-monitor-daemon` — a wrapper that locates the daemon automatically
+- Copies the command files into `~/.claude/commands/app-monitor/`
 - Merges the required shell permissions into `~/.claude/settings.json`
+
+If `~/.local/bin` is not already in your `PATH`, the installer will warn you. Add this to `~/.bashrc` or `~/.zshrc`:
+
+```bash
+export PATH="$HOME/.local/bin:$PATH"
+```
 
 **3. (Optional) Install psutil for richer metrics**
 
@@ -90,33 +116,28 @@ pip install psutil
 
 **4. Verify**
 
-Open any project in Claude Code and type `/app` — you should see `start`, `stop`, `restart`, `monitor`, `report`.
+Open any project in Claude Code and type `/app-monitor` — you should see `start`, `stop`, `restart`, `monitor`, `report`.
 
 ---
 
-### Option B — Per-project install
+### Option C — Per-project install (development / sandboxed)
 
-Use this if you want to bundle the plugin inside a specific project and keep everything self-contained.
+Use this to load the plugin for a single project without installing it globally.
 
-**1. Clone or copy this plugin into your project**
+**1. Clone this repo anywhere**
 
 ```bash
-git clone <this-repo> AppPlugin
+git clone https://github.com/becido/AppPlugin
 ```
 
-**2. Open AppPlugin as a Claude Code project**
+**2. Load it with `--plugin-dir`**
 
-Claude Code loads slash commands and settings from the `.claude/` directory of whatever folder you open. You must open `AppPlugin/` as your working directory (or add it as an additional directory).
-
-**Option B1 — Open AppPlugin directly:**
 ```bash
-cd AppPlugin
-claude
+claude --plugin-dir /path/to/AppPlugin
 ```
 
-**Option B2 — Add as an additional directory in your existing project:**
+Or add it to a project's additional directories in `.claude/settings.json`:
 
-In your project's `.claude/settings.json` or `.claude/settings.local.json`, add:
 ```json
 {
   "permissions": {
@@ -125,16 +146,6 @@ In your project's `.claude/settings.json` or `.claude/settings.local.json`, add:
 }
 ```
 
-**3. (Optional) Install psutil for richer metrics**
-
-```bash
-pip install psutil
-```
-
-**4. Verify installation**
-
-In Claude Code, type `/app` — you should see the available commands: `start`, `stop`, `restart`, `monitor`, `report`.
-
 ---
 
 ## Usage
@@ -142,7 +153,7 @@ In Claude Code, type `/app` — you should see the available commands: `start`, 
 ### Starting your app for the first time
 
 ```
-/app start
+/app-monitor:start
 ```
 
 Claude will ask:
@@ -153,7 +164,7 @@ Enter your start command, e.g. `python server.py` or `npm run dev`. Claude saves
 ### Starting again (saved command)
 
 ```
-/app start
+/app-monitor:start
 ```
 
 Claude reads the saved command and starts without prompting.
@@ -169,7 +180,7 @@ Edit `data/config.json` directly:
 }
 ```
 
-Or delete `data/config.json` and run `/app start` — Claude will ask again.
+Or delete `data/config.json` and run `/app-monitor:start` — Claude will ask again.
 
 ### Resetting auto-fix preferences
 
@@ -200,7 +211,7 @@ Lines that match are still written to `data/app.log` but never surfaced as pendi
 ### Stopping the app
 
 ```
-/app stop
+/app-monitor:stop
 ```
 
 Stops the managed application and its background daemon cleanly.
@@ -208,7 +219,7 @@ Stops the managed application and its background daemon cleanly.
 ### Restarting the app
 
 ```
-/app restart
+/app-monitor:restart
 ```
 
 Stops the app and immediately starts it again using the saved command. Useful after editing source code or recovering from a crash without leaving the monitoring session.
@@ -216,7 +227,7 @@ Stops the app and immediately starts it again using the saved command. Useful af
 ### Viewing a session report
 
 ```
-/app report
+/app-monitor:report
 ```
 
 Works whether the app is running or stopped. All data persists across sessions until you clear the `data/` directory.
@@ -308,34 +319,35 @@ Add the substring to `ignore_patterns` in `data/config.json` and the daemon will
 
 ```
 AppPlugin/
-├── install.sh               # Global installer — run once to enable /app in all projects
-├── .claude/
-│   ├── commands/
-│   │   └── app/
-│   │       ├── start.md     # /app start
-│   │       ├── stop.md      # /app stop
-│   │       ├── restart.md   # /app restart
-│   │       ├── monitor.md   # /app monitor (internal, driven by /loop)
-│   │       └── report.md    # /app report
-│   └── settings.local.json  # Bash permission allowlist (per-project install only)
+├── .claude-plugin/
+│   └── plugin.json          # Plugin manifest (name, version, author)
+├── bin/
+│   └── app-monitor-daemon   # Self-locating wrapper — calls scripts/daemon.py
+├── commands/
+│   ├── start.md             # /app-monitor:start
+│   ├── stop.md              # /app-monitor:stop
+│   ├── restart.md           # /app-monitor:restart
+│   ├── monitor.md           # /app-monitor:monitor (internal, driven by /loop)
+│   └── report.md            # /app-monitor:report
 ├── scripts/
 │   └── daemon.py            # Background process manager and output monitor
-└── .gitignore               # Ignores AppPlugin's own data/ directory
+├── install.sh               # Manual global installer (fallback for non-plugin installs)
+└── .gitignore
 ```
 
 ---
 
 ## How it works
 
-`/app start` launches `scripts/daemon.py` as a detached background process using `nohup`. The daemon:
+`/app-monitor:start` launches `scripts/daemon.py` as a detached background process using `nohup`, via the `app-monitor-daemon` wrapper that resolves the script path at runtime. The daemon:
 
 1. Spawns your app via the shell and captures its combined stdout+stderr through a pipe.
 2. Writes every line to `data/app.log` inside **your application's working directory**.
-3. Scans each line for `ERROR`, `WARN`, or `WARNING` (case-insensitive, whole-word match) and appends matching records to `data/issues_pending.jsonl`.
+3. Scans each line for `ERROR`, `WARN`, or `WARNING` (case-insensitive, whole-word match) and appends matching records to `data/issues_pending.jsonl`. Lines matching any `ignore_patterns` entry are skipped.
 4. On process exit with a non-zero code, records a crash entry in `data/crashes.jsonl` including the last 100 lines of output.
 5. Samples CPU% and memory usage every 10 seconds and appends to `data/metrics.jsonl`.
 
-Claude Code's `/loop` mechanism drives `/app monitor` on repeat. Each cycle, Claude reads `issues_pending.jsonl`, applies your saved preferences, and handles issues — prompting when needed, auto-fixing when configured, and finally moving acknowledged records to `issues_handled.jsonl`.
+Claude Code's `/loop` mechanism drives `/app-monitor:monitor` on repeat. Each cycle, Claude reads `issues_pending.jsonl`, applies your saved preferences, and handles issues — prompting when needed, auto-fixing when configured, and finally moving acknowledged records to `issues_handled.jsonl`.
 
 ---
 

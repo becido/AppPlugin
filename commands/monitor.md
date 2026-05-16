@@ -1,4 +1,4 @@
-One monitoring cycle for the running application. Called automatically on each iteration of the monitoring loop started by `/app start`.
+One monitoring cycle for the running application. Called automatically on each iteration of the monitoring loop started by `/app-monitor:start`.
 
 ---
 
@@ -6,7 +6,7 @@ One monitoring cycle for the running application. Called automatically on each i
 
 Run:
 ```bash
-python scripts/daemon.py get-pending
+app-monitor-daemon get-pending
 ```
 
 This returns a JSON array of unacknowledged ERROR and WARN records. Each record has fields:
@@ -46,7 +46,7 @@ For **each** issue in the pending list, determine the preference based on its se
   - **1 (Yes):** Fix the code, then note the `id`.
   - **2 (Yes + auto):** Fix the code, set the relevant preference to `"auto_fix"` by running:
     ```bash
-    python scripts/daemon.py set-pref error_pref auto_fix
+    app-monitor-daemon set-pref error_pref auto_fix
     ```
     (or `warn_pref` if it's a WARN), then note the `id`.
   - **3 (No):** Note the `id` without fixing.
@@ -55,7 +55,7 @@ For **each** issue in the pending list, determine the preference based on its se
 
 After all issues are handled, acknowledge all by passing their IDs to:
 ```bash
-python scripts/daemon.py acknowledge <id1> <id2> ...
+app-monitor-daemon acknowledge <id1> <id2> ...
 ```
 
 ---
@@ -64,7 +64,7 @@ python scripts/daemon.py acknowledge <id1> <id2> ...
 
 Run:
 ```bash
-python scripts/daemon.py get-crashes
+app-monitor-daemon get-crashes
 ```
 
 If the array is non-empty, alert the user:
@@ -77,12 +77,12 @@ The application crashed N time(s):
 
 Then mark them reported:
 ```bash
-python scripts/daemon.py mark-crashes-reported
+app-monitor-daemon mark-crashes-reported
 ```
 
 ---
 
 ## Step 4 — Done
 
-This cycle is complete. The loop will call `/app monitor` again after a short interval.
-If the user asks to stop monitoring, they should run `/app stop` or cancel the loop.
+This cycle is complete. The loop will call `/app-monitor:monitor` again after a short interval.
+If the user asks to stop monitoring, they should run `/app-monitor:stop` or cancel the loop.
