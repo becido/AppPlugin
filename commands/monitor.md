@@ -1,4 +1,4 @@
-One monitoring cycle for the running application. Called automatically on each iteration of the monitoring loop started by `/app-monitor:start`.
+One monitoring cycle for the running application. Called automatically on each iteration of the monitoring loop started by `/app:start`.
 
 ---
 
@@ -84,5 +84,5 @@ app-monitor-daemon mark-crashes-reported
 
 ## Step 4 — Done
 
-This cycle is complete. The loop will call `/app-monitor:monitor` again after a short interval.
-If the user asks to stop monitoring, they should run `/app-monitor:stop` or cancel the loop.
+This cycle is complete. The loop will call `/app:monitor` again after a short interval.
+If the user asks to stop monitoring, they should run `/app:stop` or cancel the loop.

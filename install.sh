@@ -4,7 +4,7 @@ set -euo pipefail
 PLUGIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DAEMON="$PLUGIN_DIR/scripts/daemon.py"
 CLAUDE_DIR="$HOME/.claude"
-COMMANDS_DIR="$CLAUDE_DIR/commands/app-monitor"
+COMMANDS_DIR="$CLAUDE_DIR/commands/app"
 LOCAL_BIN="$HOME/.local/bin"
 SETTINGS="$CLAUDE_DIR/settings.json"
 
@@ -44,7 +44,7 @@ mkdir -p "$COMMANDS_DIR"
 for src in "$PLUGIN_DIR/commands"/*.md; do
     name="$(basename "$src")"
     cp "$src" "$COMMANDS_DIR/$name"
-    echo "  [OK] ~/.claude/commands/app-monitor/$name"
+    echo "  [OK] ~/.claude/commands/app/$name"
 done
 
 # 5. Merge permissions into ~/.claude/settings.json
@@ -97,7 +97,7 @@ print(f"  [OK] ~/.claude/settings.json ({added} permission(s) added)")
 PYEOF
 
 echo ""
-echo "Done! Commands are available as /app-monitor:start, /app-monitor:stop, etc."
+echo "Done! Commands are available as /app:start, /app:stop, etc."
 echo ""
 echo "Or install via the Claude Code plugin system (preferred):"
-echo "  /plugin install app-monitor@claude-plugins-official"
+echo "  /plugin install app@claude-plugins-official"

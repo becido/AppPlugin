@@ -55,9 +55,9 @@ If no PID file appears, read `data/daemon.log` for errors and report them to the
 ## Step 4 — Confirm and start monitoring
 
 Tell the user the application is running, then say:
-> "Starting continuous monitoring — I'll surface any ERRORs or WARNINGs as they appear. Use `/app-monitor:stop` to stop the app, or `/app-monitor:report` for a full health report."
+> "Starting continuous monitoring — I'll surface any ERRORs or WARNINGs as they appear. Use `/app:stop` to stop the app, or `/app:report` for a full health report."
 
 Then immediately start the monitoring loop by invoking:
 ```
-/loop /app-monitor:monitor
+/loop /app:monitor
 ```

@@ -1,5 +1,5 @@
 {
-  "name": "app-monitor",
+  "name": "app",
   "description": "Monitor, auto-fix, and manage your running application from inside Claude Code",
   "version": "1.0.0",
   "author": {

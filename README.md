@@ -6,15 +6,15 @@ A Claude Code plugin that manages, monitors, and auto-fixes your running applica
 
 ## What it does
 
-### `/app-monitor:start`
+### `/app:start`
 Starts your application as a monitored background process.
 
-- **First run:** asks you for the command to start your app (e.g. `python app.py`, `npm start`, `./server`), then saves it. Every subsequent `/app-monitor:start` uses the saved command automatically — no prompt.
+- **First run:** asks you for the command to start your app (e.g. `python app.py`, `npm start`, `./server`), then saves it. Every subsequent `/app:start` uses the saved command automatically — no prompt.
 - Spawns the app in the background and begins capturing all console output.
 - Automatically starts a continuous monitoring loop.
 
 ### Continuous monitoring
-After `/app-monitor:start`, Claude watches your app's output in real time. Whenever a line containing `ERROR`, `WARN`, or `WARNING` is detected, Claude surfaces it and asks:
+After `/app:start`, Claude watches your app's output in real time. Whenever a line containing `ERROR`, `WARN`, or `WARNING` is detected, Claude surfaces it and asks:
 
 ```
 [ERROR] 2026-05-09 12:34:56
@@ -32,13 +32,13 @@ Fix this?
 
 Crashes (non-zero exit codes) are detected automatically and reported immediately, including the last 100 lines of output at the time of the crash.
 
-### `/app-monitor:stop`
+### `/app:stop`
 Stops the monitored application and its background daemon cleanly.
 
-### `/app-monitor:restart`
+### `/app:restart`
 Stops the application, then immediately starts it again. Useful for picking up code changes or recovering from a crash without leaving the monitoring session.
 
-### `/app-monitor:report`
+### `/app:report`
 Generates a full health report for the current (or most recent) session:
 
 - **Crash log** — count, timestamps, exit codes, and last log lines for each crash
@@ -63,12 +63,12 @@ Generates a full health report for the current (or most recent) session:
 Install directly from the Claude Code plugin system — no manual setup required:
 
 ```
-/plugin install app-monitor@claude-plugins-official
+/plugin install app@claude-plugins-official
 ```
 
 Or browse to it via `/plugin` → **Discover** in Claude Code.
 
-Once installed, the `/app-monitor:*` commands are available in every project automatically.
+Once installed, the `/app:*` commands are available in every project automatically.
 
 **Optional: install psutil for richer metrics**
 
@@ -99,7 +99,7 @@ cd ~/claude-plugins/AppPlugin
 
 The installer:
 - Creates `~/.local/bin/app-monitor-daemon` — a wrapper that locates the daemon automatically
-- Copies the command files into `~/.claude/commands/app-monitor/`
+- Copies the command files into `~/.claude/commands/app/`
 - Merges the required shell permissions into `~/.claude/settings.json`
 
 If `~/.local/bin` is not already in your `PATH`, the installer will warn you. Add this to `~/.bashrc` or `~/.zshrc`:
@@ -116,7 +116,7 @@ pip install psutil
 
 **4. Verify**
 
-Open any project in Claude Code and type `/app-monitor` — you should see `start`, `stop`, `restart`, `monitor`, `report`.
+Open any project in Claude Code and type `/app` — you should see `start`, `stop`, `restart`, `monitor`, `report`.
 
 ---
 
@@ -153,7 +153,7 @@ Or add it to a project's additional directories in `.claude/settings.json`:
 ### Starting your app for the first time
 
 ```
-/app-monitor:start
+/app:start
 ```
 
 Claude will ask:
@@ -164,7 +164,7 @@ Enter your start command, e.g. `python server.py` or `npm run dev`. Claude saves
 ### Starting again (saved command)
 
 ```
-/app-monitor:start
+/app:start
 ```
 
 Claude reads the saved command and starts without prompting.
@@ -180,7 +180,7 @@ Edit `data/config.json` directly:
 }
 ```
 
-Or delete `data/config.json` and run `/app-monitor:start` — Claude will ask again.
+Or delete `data/config.json` and run `/app:start` — Claude will ask again.
 
 ### Resetting auto-fix preferences
 
@@ -211,7 +211,7 @@ Lines that match are still written to `data/app.log` but never surfaced as pendi
 ### Stopping the app
 
 ```
-/app-monitor:stop
+/app:stop
 ```
 
 Stops the managed application and its background daemon cleanly.
@@ -219,7 +219,7 @@ Stops the managed application and its background daemon cleanly.
 ### Restarting the app
 
 ```
-/app-monitor:restart
+/app:restart
 ```
 
 Stops the app and immediately starts it again using the saved command. Useful after editing source code or recovering from a crash without leaving the monitoring session.
@@ -227,7 +227,7 @@ Stops the app and immediately starts it again using the saved command. Useful af
 ### Viewing a session report
 
 ```
-/app-monitor:report
+/app:report
 ```
 
 Works whether the app is running or stopped. All data persists across sessions until you clear the `data/` directory.
@@ -324,11 +324,11 @@ AppPlugin/
 ├── bin/
 │   └── app-monitor-daemon   # Self-locating wrapper — calls scripts/daemon.py
 ├── commands/
-│   ├── start.md             # /app-monitor:start
-│   ├── stop.md              # /app-monitor:stop
-│   ├── restart.md           # /app-monitor:restart
-│   ├── monitor.md           # /app-monitor:monitor (internal, driven by /loop)
-│   └── report.md            # /app-monitor:report
+│   ├── start.md             # /app:start
+│   ├── stop.md              # /app:stop
+│   ├── restart.md           # /app:restart
+│   ├── monitor.md           # /app:monitor (internal, driven by /loop)
+│   └── report.md            # /app:report
 ├── scripts/
 │   └── daemon.py            # Background process manager and output monitor
 ├── install.sh               # Manual global installer (fallback for non-plugin installs)
@@ -339,7 +339,7 @@ AppPlugin/
 
 ## How it works
 
-`/app-monitor:start` launches `scripts/daemon.py` as a detached background process using `nohup`, via the `app-monitor-daemon` wrapper that resolves the script path at runtime. The daemon:
+`/app:start` launches `scripts/daemon.py` as a detached background process using `nohup`, via the `app-monitor-daemon` wrapper that resolves the script path at runtime. The daemon:
 
 1. Spawns your app via the shell and captures its combined stdout+stderr through a pipe.
 2. Writes every line to `data/app.log` inside **your application's working directory**.
@@ -347,7 +347,7 @@ AppPlugin/
 4. On process exit with a non-zero code, records a crash entry in `data/crashes.jsonl` including the last 100 lines of output.
 5. Samples CPU% and memory usage every 10 seconds and appends to `data/metrics.jsonl`.
 
-Claude Code's `/loop` mechanism drives `/app-monitor:monitor` on repeat. Each cycle, Claude reads `issues_pending.jsonl`, applies your saved preferences, and handles issues — prompting when needed, auto-fixing when configured, and finally moving acknowledged records to `issues_handled.jsonl`.
+Claude Code's `/loop` mechanism drives `/app:monitor` on repeat. Each cycle, Claude reads `issues_pending.jsonl`, applies your saved preferences, and handles issues — prompting when needed, auto-fixing when configured, and finally moving acknowledged records to `issues_handled.jsonl`.
 
 ---
 
