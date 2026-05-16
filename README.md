@@ -35,7 +35,7 @@ Crashes (non-zero exit codes) are detected automatically and reported immediatel
 ### `/app stop`
 Stops the monitored application and its background daemon cleanly.
 
-### `/app reset`
+### `/app restart`
 Stops the application, then immediately starts it again. Useful for picking up code changes or recovering from a crash without leaving the monitoring session.
 
 ### `/app report`
@@ -90,7 +90,7 @@ pip install psutil
 
 **4. Verify**
 
-Open any project in Claude Code and type `/app` — you should see `start`, `stop`, `reset`, `monitor`, `report`.
+Open any project in Claude Code and type `/app` — you should see `start`, `stop`, `restart`, `monitor`, `report`.
 
 ---
 
@@ -133,7 +133,7 @@ pip install psutil
 
 **4. Verify installation**
 
-In Claude Code, type `/app` — you should see the available commands: `start`, `stop`, `reset`, `monitor`, `report`.
+In Claude Code, type `/app` — you should see the available commands: `start`, `stop`, `restart`, `monitor`, `report`.
 
 ---
 
@@ -184,6 +184,19 @@ Set `error_pref` and/or `warn_pref` back to `"ask"` in `data/config.json`:
 
 Valid preference values: `"ask"` · `"auto_fix"` · `"ignore"`
 
+### Suppressing specific log lines
+
+Add an `ignore_patterns` list to `data/config.json` to silently drop any log line containing one of those strings — before it is classified as an issue:
+
+```json
+{
+  "command": "python server.py",
+  "ignore_patterns": ["WatchFiles detected changes", "Reloading..."]
+}
+```
+
+Lines that match are still written to `data/app.log` but never surfaced as pending issues. This is useful for noisy but harmless framework messages that you cannot suppress at the logger level.
+
 ### Stopping the app
 
 ```
@@ -195,7 +208,7 @@ Stops the managed application and its background daemon cleanly.
 ### Restarting the app
 
 ```
-/app reset
+/app restart
 ```
 
 Stops the app and immediately starts it again using the saved command. Useful after editing source code or recovering from a crash without leaving the monitoring session.
@@ -271,14 +284,16 @@ Use `console.error(...)` for errors and `console.warn(...)` for warnings. These 
 
 Some frameworks emit `WARNING`-level log lines as normal operational messages (e.g. uvicorn's hot-reload notifying you that a file changed). These will show up as pending issues every time you edit a file.
 
-Suppress them at the logger level rather than setting `warn_pref: "ignore"` globally (which would hide real warnings too):
+**Option 1 — suppress at the logger level** (preferred when you control the logger):
 
 ```python
 # Silence uvicorn's WatchFiles reload noise
 logging.getLogger("watchfiles").setLevel(logging.ERROR)
 ```
 
-Apply the same pattern for any other chatty third-party logger — raise its level to `ERROR` so only genuine problems surface.
+**Option 2 — suppress via `ignore_patterns`** (useful for third-party output you cannot reconfigure):
+
+Add the substring to `ignore_patterns` in `data/config.json` and the daemon will drop matching lines before they become issues (see [Suppressing specific log lines](#suppressing-specific-log-lines)).
 
 ### Quick checklist
 
@@ -299,7 +314,7 @@ AppPlugin/
 │   │   └── app/
 │   │       ├── start.md     # /app start
 │   │       ├── stop.md      # /app stop
-│   │       ├── reset.md     # /app reset
+│   │       ├── restart.md   # /app restart
 │   │       ├── monitor.md   # /app monitor (internal, driven by /loop)
 │   │       └── report.md    # /app report
 │   └── settings.local.json  # Bash permission allowlist (per-project install only)

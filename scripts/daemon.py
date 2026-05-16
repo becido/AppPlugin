@@ -179,6 +179,14 @@ def cmd_start(command):
     )
     t.start()
 
+    config = {}
+    if CONFIG_FILE.exists():
+        try:
+            config = json.loads(CONFIG_FILE.read_text())
+        except json.JSONDecodeError:
+            pass
+    ignore_patterns = config.get("ignore_patterns", [])
+
     recent_lines = deque(maxlen=100)
     with open(LOG_FILE, "a") as log_f:
         for line in _app_proc.stdout:
@@ -193,7 +201,7 @@ def cmd_start(command):
             elif WARN_RE.search(stripped):
                 severity = "WARN"
 
-            if severity:
+            if severity and not any(p in stripped for p in ignore_patterns):
                 append_jsonl(ISSUES_PENDING_FILE, {
                     "id": f"{time.time():.6f}",
                     "timestamp": datetime.datetime.now().isoformat(),
